@@ -1,0 +1,9 @@
+[package]
+name = "rl_2019"
+version = "0.1.0"
+authors = ["Matteo Guglielmetti <m.guglielmetti@noonic.com>"]
+edition = "2018"
+
+[dependencies]
+quicksilver = { version = "0.3.6", default-features = false, features = ["fonts", "saving"]}
+rand = "0.6"
