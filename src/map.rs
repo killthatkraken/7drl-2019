@@ -3,7 +3,7 @@ extern crate rand;
 use quicksilver::{
     geom::{Rectangle, Vector},
     graphics::{Background::Blended, Color, Image},
-    lifecycle::{Window},
+    lifecycle::Window,
 };
 use std::collections::HashMap;
 
@@ -151,8 +151,8 @@ pub const TILE_SIZE: Vector = Vector { x: 12.0, y: 12.0 };
 pub const MAP_SIZE: Vector = Vector { x: 57.0, y: 40.0 };
 
 pub fn compute_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
-    for dx in -1..2 {
-        for dy in -1..2 {
+    for dx in -2..3 {
+        for dy in -2..3 {
             let future_x = player_pos.x + dx as f32;
             let future_y = player_pos.y + dy as f32;
             if future_x != 0.0
@@ -160,15 +160,22 @@ pub fn compute_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
                 && future_y != 0.0
                 && future_y != MAP_SIZE.y
             {
-                map[future_x as usize][future_y as usize].is_in_fov = true;
+                let line_to_point = get_line(player_pos, Vector::new(future_x, future_y));
+                for point in line_to_point.iter() {
+                    let tile = &mut map[point.x as usize][point.y as usize];
+                    tile.is_in_fov = true;
+                    if tile.blocks {
+                        break;
+                    }
+                }
             }
         }
     }
 }
 
 pub fn clear_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
-    for dx in -1..2 {
-        for dy in -1..2 {
+    for dx in -2..3 {
+        for dy in -2..3 {
             let future_x = player_pos.x + dx as f32;
             let future_y = player_pos.y + dy as f32;
             if future_x != 0.0
