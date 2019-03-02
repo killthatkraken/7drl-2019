@@ -2,7 +2,7 @@ extern crate rand;
 
 use quicksilver::{
     geom::{Rectangle, Vector},
-    graphics::{Background::Blended, Color, Image},
+    graphics::{Background::Blended, Background::Col, Color, Image},
     lifecycle::Window,
 };
 use std::collections::HashMap;
@@ -149,7 +149,7 @@ pub const WINDOW_SIZE: Vector = Vector {
     y: 768.0,
 };
 
-pub const GLYPHS: &str = "@#.x >_+Xo:|";
+pub const GLYPHS: &str = "@#.x >_+Xo:|-";
 pub const TILE_SIZE: Vector = Vector { x: 12.0, y: 12.0 };
 pub const MAP_SIZE: Vector = Vector { x: 57.0, y: 40.0 };
 
@@ -276,6 +276,10 @@ pub fn draw_map(window: &mut Window, map: &Vec<Vec<Tile>>, tileset: &mut HashMap
         for (y, tile) in tile_col.iter().enumerate() {
             if let Some(image) = tileset.get(&tile.glyph) {
                 let pos_px = Vector::new(x as i32, y as i32).times(TILE_SIZE);
+                window.draw(
+                    &Rectangle::new(pos_px, image.area().size()),
+                    Col(Palette::DARK_BLUE),
+                );
                 window.draw(
                     &Rectangle::new(pos_px, image.area().size()),
                     Blended(

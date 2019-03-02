@@ -4,6 +4,7 @@ mod ui;
 
 use crate::entities::Entity;
 use crate::map::{Map, Palette, Tile};
+use crate::ui::UIData;
 use quicksilver::{
     geom::{Rectangle, Vector},
     graphics::{Color, Font, FontStyle, Image},
@@ -14,11 +15,11 @@ use quicksilver::{
 use std::collections::HashMap;
 
 struct Game {
-    turn: u32,
+    tileset: Asset<HashMap<char, Image>>,
     map: Vec<Vec<Tile>>,
     entities: Vec<Entity>,
     player_id: usize,
-    tileset: Asset<HashMap<char, Image>>,
+    ui_data: UIData,
 }
 
 impl State for Game {
@@ -43,15 +44,24 @@ impl State for Game {
                 let tile = tiles.subimage(Rectangle::new(pos, map::TILE_SIZE));
                 tileset.insert(glyph, tile);
             }
+
             Ok(tileset)
         }));
 
+        let ui_text = Asset::new(Font::load(square_font).and_then(move |text| {
+            let mut texts = HashMap::new();
+            let style = FontStyle::new(12.0, Palette::WHITE);
+            texts.insert(String::from("pebbles"), text.render("Pebbles: ", &style)?);
+            texts.insert(String::from("turn"), text.render("Turn: ", &style)?);
+            Ok(texts)
+        }));
+
         Ok(Self {
-            turn: 0,
             map,
             entities,
             player_id,
             tileset,
+            ui_data: UIData::new_game(ui_text),
         })
     }
 
@@ -75,7 +85,7 @@ impl State for Game {
         }
 
         move_to(direction, &self.map, &mut self.entities[self.player_id]).and_then(|_| {
-            self.turn += 1;
+            self.ui_data.turn += 1;
             Ok(())
         })?;
 
@@ -113,13 +123,14 @@ impl State for Game {
 
         let map = &self.map;
         let entities = &self.entities;
+        let ui_data = &mut self.ui_data;
 
         tileset.execute(|tileset| {
             map::draw_map(window, map, tileset);
             entities::draw_entities(window, entities, tileset);
+            ui::draw_ui(window, ui_data, tileset);
             Ok(())
         })?;
-
         Ok(())
     }
 }
