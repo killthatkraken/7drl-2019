@@ -3,7 +3,7 @@ mod map;
 mod ui;
 
 use crate::entities::Entity;
-use crate::map::{Palette, Tile};
+use crate::map::{Map, Palette, Tile};
 use quicksilver::{
     geom::{Rectangle, Vector},
     graphics::{Color, Font, FontStyle, Image},
@@ -84,14 +84,14 @@ impl State for Game {
             self.map = map;
         }
 
-        fn move_to(dir: Vector, map: &Vec<Vec<Tile>>, player: &mut Entity) -> Result<()> {
-            let future_x = player.pos.x + dir.x;
-            let future_y = player.pos.y + dir.y;
+        fn move_to(dir: Vector, map: &Map, player: &mut Entity) -> Result<()> {
+            let future_x = player.pos.x as i32 + dir.x as i32;
+            let future_y = player.pos.y as i32 + dir.y as i32;
             if !map[future_x as usize][future_y as usize].blocks
-                && future_x != 0.0
-                && future_x != map::MAP_SIZE.x
-                && future_y != 0.0
-                && future_y != map::MAP_SIZE.y
+                && future_x != 0
+                && future_x != map::MAP_SIZE.x as i32
+                && future_y != 0
+                && future_y != map::MAP_SIZE.y as i32
             {
                 entities::move_player(dir, player);
                 Ok(())

@@ -40,7 +40,7 @@ pub fn generate() -> Vec<Entity> {
     ]
 }
 
-pub fn draw_entities(window: &mut Window, entities: &Vec<Entity>, tileset: &mut HashMap<char, Image>) -> () {
+pub fn draw_entities(window: &mut Window, entities: &[Entity], tileset: &mut HashMap<char, Image>) {
     for entity in entities.iter() {
         if let Some(image) = tileset.get(&entity.glyph) {
             let pos_px = entity.pos.times(TILE_SIZE);
@@ -64,7 +64,7 @@ pub fn draw_entities(window: &mut Window, entities: &Vec<Entity>, tileset: &mut 
     }
 }
 
-pub fn place_player(entities: &mut Vec<Entity>, player_spawn: Vector) -> () {
+pub fn place_player(entities: &mut Vec<Entity>, player_spawn: Vector) {
     entities.push(Entity {
         pos: player_spawn,
         glyph: '@',
@@ -76,7 +76,7 @@ pub fn place_player(entities: &mut Vec<Entity>, player_spawn: Vector) -> () {
     });
 }
 
-pub fn move_player(dir: Vector, player: &mut Entity) -> () {
+pub fn move_player(dir: Vector, player: &mut Entity) {
     player.pos.x += dir.x;
     player.pos.y += dir.y;
 }

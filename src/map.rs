@@ -7,6 +7,8 @@ use quicksilver::{
 };
 use std::collections::HashMap;
 
+pub type Map = Vec<Vec<Tile>>;
+
 pub struct Palette;
 
 #[allow(dead_code)]
@@ -132,7 +134,7 @@ impl Tile {
     }
     fn new_floor() -> Tile {
         Tile {
-            name: String::from(String::from("floor")),
+            name: String::from("floor"),
             glyph: '.',
             color: Palette::DARK_BLUE,
             is_in_fov: false,
@@ -146,19 +148,20 @@ pub const WINDOW_SIZE: Vector = Vector {
     x: 1024.0,
     y: 768.0,
 };
+
 pub const GLYPHS: &str = "@#.x >_+Xo:|";
 pub const TILE_SIZE: Vector = Vector { x: 12.0, y: 12.0 };
 pub const MAP_SIZE: Vector = Vector { x: 57.0, y: 40.0 };
 
-pub fn compute_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
+pub fn compute_fov(player_pos: Vector, map: &mut Map) {
     for dx in -2..3 {
         for dy in -2..3 {
-            let future_x = player_pos.x + dx as f32;
-            let future_y = player_pos.y + dy as f32;
-            if future_x != 0.0
-                && future_x != MAP_SIZE.x
-                && future_y != 0.0
-                && future_y != MAP_SIZE.y
+            let future_x: i32 = player_pos.x as i32 + dx as i32;
+            let future_y: i32 = player_pos.y as i32 + dy as i32;
+            if future_x != 0
+                && future_x != MAP_SIZE.x as i32
+                && future_y != 0
+                && future_y != MAP_SIZE.y as i32
             {
                 let line_to_point = get_line(player_pos, Vector::new(future_x, future_y));
                 for point in line_to_point.iter() {
@@ -173,15 +176,15 @@ pub fn compute_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
     }
 }
 
-pub fn clear_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
+pub fn clear_fov(player_pos: Vector, map: &mut Map) {
     for dx in -2..3 {
         for dy in -2..3 {
-            let future_x = player_pos.x + dx as f32;
-            let future_y = player_pos.y + dy as f32;
-            if future_x != 0.0
-                && future_x != MAP_SIZE.x
-                && future_y != 0.0
-                && future_y != MAP_SIZE.y
+            let future_x = player_pos.x as i32 + dx as i32;
+            let future_y = player_pos.y as i32 + dy as i32;
+            if future_x != 0
+                && future_x != MAP_SIZE.x as i32
+                && future_y != 0
+                && future_y != MAP_SIZE.y as i32
             {
                 map[future_x as usize][future_y as usize].is_in_fov = false;
             }
@@ -189,22 +192,22 @@ pub fn clear_fov(player_pos: Vector, map: &mut Vec<Vec<Tile>>) -> () {
     }
 }
 
-pub fn generate() -> (Vec<Vec<Tile>>, Vector) {
+pub fn generate() -> (Map, Vector) {
     use rand::distributions::{Distribution, Uniform};
     use rand::prelude::*;
 
-    const WALL_PERC: u32 = 35;
+    const WALL_PERC: u32 = 30;
     const ITERATIONS: u32 = 5;
     let mut rng = thread_rng();
     let die_range = Uniform::new_inclusive(1, 100);
 
-    fn count_walls(pos: Vector, map: &Vec<Vec<Tile>>) -> u32 {
+    fn count_walls(pos: Vector, map: &Map) -> u32 {
         let mut total_walls = 0;
         let pos_x: i32 = pos.x as i32;
         let pos_y: i32 = pos.y as i32;
         for sx in -1..2 {
             for sy in -1..2 {
-                if map[(pos_x + sx) as usize][(pos_y + sy) as usize].name == String::from("wall") {
+                if map[(pos_x + sx) as usize][(pos_y + sy) as usize].name == "wall" {
                     total_walls += 1;
                 }
             }
@@ -213,13 +216,12 @@ pub fn generate() -> (Vec<Vec<Tile>>, Vector) {
         total_walls
     }
 
-    let width = MAP_SIZE.x as usize;
-    let height = MAP_SIZE.y as usize;
-    let mut map: Vec<Vec<Tile>> = vec![vec![Tile::new_floor(); height]; width];
+    let mut map: Vec<Vec<Tile>> =
+        vec![vec![Tile::new_floor(); MAP_SIZE.y as usize]; MAP_SIZE.x as usize];
     let mut first_floor = Vector::new(0, 0);
-    for x in 0..width {
-        for y in 0..height {
-            if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
+    for x in 0..map.len() {
+        for y in 0..map[x].len() {
+            if x == 0 || x == map.len() - 1 || y == 0 || y == map[x].len() - 1 {
                 map[x][y] = Tile::new_wall();
             } else {
                 let roll_die = die_range.sample(&mut rng);
@@ -233,12 +235,12 @@ pub fn generate() -> (Vec<Vec<Tile>>, Vector) {
     for _i in 0..ITERATIONS {
         let mut to_wall: Vec<Vector> = vec![];
         let mut to_floor: Vec<Vector> = vec![];
-        for x in 0..width {
-            for y in 0..height {
+        for x in 0..map.len() {
+            for y in 0..map[x].len() {
                 let this_tile = &map[x][y];
                 let this_pos = Vector::new(x as f32, y as f32);
 
-                if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
+                if x == 0 || x == map.len() - 1 || y == 0 || y == map[x].len() - 1 {
                     to_floor.push(this_pos);
                 } else {
                     let surrounding_walls = count_walls(this_pos, &map);
@@ -269,11 +271,7 @@ pub fn generate() -> (Vec<Vec<Tile>>, Vector) {
     (map, first_floor)
 }
 
-pub fn draw_map(
-    window: &mut Window,
-    map: &Vec<Vec<Tile>>,
-    tileset: &mut HashMap<char, Image>,
-) -> () {
+pub fn draw_map(window: &mut Window, map: &Vec<Vec<Tile>>, tileset: &mut HashMap<char, Image>) {
     for (x, tile_col) in map.iter().enumerate() {
         for (y, tile) in tile_col.iter().enumerate() {
             if let Some(image) = tileset.get(&tile.glyph) {
@@ -306,23 +304,20 @@ pub fn get_line(a: Vector, b: Vector) -> Vec<Vector> {
         std::mem::swap(&mut x1, &mut y1);
         std::mem::swap(&mut x2, &mut y2);
     }
-    let mut reversed = false;
-    if x1 > x2 {
+    let reversed = if x1 > x2 {
         std::mem::swap(&mut x1, &mut x2);
         std::mem::swap(&mut y1, &mut y2);
-        reversed = true;
-    }
+        true
+    } else {
+        false
+    };
+
     let dx = x2 - x1;
     let dy = (y2 - y1).abs();
     let mut err = dx / 2;
     let mut y = y1;
-    let ystep: i32;
-    if y1 < y2 {
-        ystep = 1;
-    } else {
-        ystep = -1;
-    }
-    for x in x1..(x2 + 1) {
+    let ystep: i32 = if y1 < y2 { 1 } else { -1 };
+    for x in x1..=x2 {
         if is_steep {
             points.push(Vector {
                 x: y as f32,
