@@ -1,8 +1,8 @@
-use crate::map::{Palette, TILE_SIZE};
+use crate::map::{get_line, Map, Palette, TILE_SIZE};
 use quicksilver::{
     geom::{Rectangle, Vector},
-    graphics::{Background::{Col, Blended}, Color, Image},
-    lifecycle::{Window}
+    graphics::{Background::Blended, Color, Image},
+    lifecycle::Window,
 };
 use std::collections::HashMap;
 
@@ -17,38 +17,69 @@ pub struct Entity {
     pub color_in_fov: Color,
 }
 
-pub fn generate() -> Vec<Entity> {
-    vec![
+impl Entity {
+    fn new_pebble(pos: Vector) -> Entity {
         Entity {
-            pos: Vector::new(2, 4),
-            glyph: ':',
-            color: Palette::DARK_BLUE,
-            hp: 1,
-            max_hp: 1,
-            is_in_fov: false,
-            color_in_fov: Palette::RED,
-        },
-        Entity {
-            pos: Vector::new(7, 5),
-            glyph: 'o',
+            pos,
+            glyph: '.',
             color: Palette::DARK_BLUE,
             hp: 0,
             max_hp: 0,
             is_in_fov: false,
             color_in_fov: Palette::WHITE,
-        },
-    ]
+        }
+    }
+    fn new_up_stairs(pos: Vector) -> Entity {
+        Entity {
+            pos,
+            glyph: '<',
+            color: Palette::DARK_BLUE,
+            hp: 0,
+            max_hp: 0,
+            is_in_fov: false,
+            color_in_fov: Palette::WHITE,
+        }
+    }
+    fn is_in_player_fov(&self, player_pos: Vector) -> bool {
+        get_line(self.pos, player_pos).len() <= 2
+    }
+}
+
+const MAX_PEBBLES: u32 = 15;
+const PEBBLE_PERC: u32 = 5;
+
+pub fn generate(map: &Map) -> Vec<Entity> {
+    use rand::distributions::{Distribution, Uniform};
+    use rand::prelude::*;
+
+    let mut rng = thread_rng();
+    let die_range = Uniform::new_inclusive(1, 100);
+
+    let mut entities: Vec<Entity> = vec![];
+    let mut pebbles_count = 0;
+
+    'main_loop: for x in 0..map.len() {
+        for y in 0..map[x].len() {
+            if !map[x][y].blocks {
+                let roll = die_range.sample(&mut rng);
+                if roll <= PEBBLE_PERC {
+                    entities.push(Entity::new_pebble(Vector::new(x as f32, y as f32)));
+                    pebbles_count += 1;
+                    if pebbles_count == MAX_PEBBLES {
+                        break 'main_loop;
+                    }
+                }
+            }
+        }
+    }
+
+    entities
 }
 
 pub fn draw_entities(window: &mut Window, entities: &[Entity], tileset: &mut HashMap<char, Image>) {
     for entity in entities.iter() {
         if let Some(image) = tileset.get(&entity.glyph) {
             let pos_px = entity.pos.times(TILE_SIZE);
-            //Clear the cell
-            window.draw(
-                &Rectangle::new(pos_px, TILE_SIZE),
-                Col(Palette::DARK_BLUE),
-            );
             window.draw(
                 &Rectangle::new(pos_px, image.area().size()),
                 Blended(
@@ -73,6 +104,13 @@ pub fn place_player(entities: &mut Vec<Entity>, player_spawn: Vector) {
         max_hp: 5,
         is_in_fov: true,
         color_in_fov: Palette::WHITE,
+    });
+}
+
+pub fn compute_fov(entities: &mut Vec<Entity>, player_id: usize) {
+    let player = entities[player_id].clone();
+    entities.iter_mut().for_each(|entity| {
+        entity.is_in_fov = entity.is_in_player_fov(player.pos);
     });
 }
 

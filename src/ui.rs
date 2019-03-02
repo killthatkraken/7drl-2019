@@ -1,3 +1,1 @@
-pub fn draw_ui() -> () {
-    
-}
+pub fn draw_ui() {}

@@ -135,7 +135,7 @@ impl Tile {
     fn new_floor() -> Tile {
         Tile {
             name: String::from("floor"),
-            glyph: '.',
+            glyph: ' ',
             color: Palette::DARK_BLUE,
             is_in_fov: false,
             color_in_fov: Palette::WHITE,

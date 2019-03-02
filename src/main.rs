@@ -27,7 +27,7 @@ impl State for Game {
         let square_font = "square.ttf";
 
         let (map, player_spawn) = map::generate();
-        let mut entities = entities::generate();
+        let mut entities = entities::generate(&map);
 
         let player_id = entities.len();
         entities::place_player(&mut entities, player_spawn);
@@ -100,6 +100,7 @@ impl State for Game {
             }
         }
 
+        entities::compute_fov(&mut self.entities, self.player_id);
         map::compute_fov(self.entities[self.player_id].pos, &mut self.map);
         Ok(())
     }
