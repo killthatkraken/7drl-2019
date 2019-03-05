@@ -1,6 +1,6 @@
 use quicksilver::{
     geom::{Rectangle, Shape, Vector},
-    graphics::{Background::Blended, Background::Img, Font, Image},
+    graphics::{Background::Blended, Background::Img, Image},
     lifecycle::{Asset, Window},
 };
 

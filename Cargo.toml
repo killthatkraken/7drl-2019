@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 quicksilver = { version = "0.3.6", default-features = false, features = ["fonts", "saving"]}
 rand = "0.6"
+slotmap = "0.3"

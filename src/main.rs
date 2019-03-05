@@ -3,7 +3,7 @@ mod map;
 mod ui;
 
 use crate::entities::Entity;
-use crate::map::{Map, Palette, Tile};
+use crate::map::{Map, Palette};
 use crate::ui::UIData;
 use quicksilver::{
     geom::{Rectangle, Vector},
@@ -13,12 +13,13 @@ use quicksilver::{
     Future, Result,
 };
 use std::collections::HashMap;
+use slotmap::{SlotMap, DefaultKey};
 
 struct Game {
     tileset: Asset<HashMap<char, Image>>,
-    map: Vec<Vec<Tile>>,
-    entities: Vec<Entity>,
-    player_id: usize,
+    map: Map,
+    entities: SlotMap<DefaultKey, Entity>,
+    player_key: DefaultKey,
     ui_data: UIData,
 }
 
@@ -30,8 +31,9 @@ impl State for Game {
         let (map, player_spawn) = map::generate();
         let mut entities = entities::generate(&map);
 
-        let player_id = entities.len();
-        entities::place_player(&mut entities, player_spawn);
+        let player_key = entities.insert_with_key(|k| {
+            Entity::new_player(k, player_spawn)
+        });
 
         let tileset = Asset::new(Font::load(square_font).and_then(move |text| {
             let tiles = text
@@ -59,16 +61,14 @@ impl State for Game {
         Ok(Self {
             map,
             entities,
-            player_id,
             tileset,
+            player_key,
             ui_data: UIData::new_game(ui_text),
         })
     }
 
     //Process keyboard, mouse, update game state
     fn update(&mut self, window: &mut Window) -> Result<()> {
-        map::clear_fov(self.entities[self.player_id].pos, &mut self.map);
-
         let mut direction = Vector::ZERO;
 
         if window.keyboard()[Key::Right] == Pressed {
@@ -84,34 +84,27 @@ impl State for Game {
             direction = Vector::new(0, 1);
         }
 
-        move_to(direction, &self.map, &mut self.entities[self.player_id]).and_then(|_| {
-            self.ui_data.turn += 1;
-            Ok(())
-        })?;
+        let player_pos = self.entities.get(self.player_key).unwrap().pos.clone();
+
+        let future_x = player_pos.x as i32 + direction.x as i32;
+        let future_y = player_pos.y as i32 + direction.y as i32;
+        if !self.map[future_x as usize][future_y as usize].blocks
+            && future_x != 0
+            && future_x != map::MAP_SIZE.x as i32
+            && future_y != 0
+            && future_y != map::MAP_SIZE.y as i32
+        {
+            self.entities.get_mut(self.player_key).unwrap().pos = Vector::new(future_x, future_y);
+        }
 
         if window.keyboard()[Key::R] == Pressed {
             let (map, _player_spawn) = map::generate();
             self.map = map;
         }
 
-        fn move_to(dir: Vector, map: &Map, player: &mut Entity) -> Result<()> {
-            let future_x = player.pos.x as i32 + dir.x as i32;
-            let future_y = player.pos.y as i32 + dir.y as i32;
-            if !map[future_x as usize][future_y as usize].blocks
-                && future_x != 0
-                && future_x != map::MAP_SIZE.x as i32
-                && future_y != 0
-                && future_y != map::MAP_SIZE.y as i32
-            {
-                entities::move_player(dir, player);
-                Ok(())
-            } else {
-                Ok(())
-            }
-        }
-
-        entities::compute_fov(&mut self.entities, self.player_id);
-        map::compute_fov(self.entities[self.player_id].pos, &mut self.map);
+        entities::pickup(&mut self.entities, &player_pos, &mut self.ui_data);
+        entities::compute_fov(&mut self.entities, &player_pos);
+        map::compute_fov(&mut self.map, &player_pos);
         Ok(())
     }
 
