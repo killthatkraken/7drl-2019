@@ -153,7 +153,7 @@ pub const GLYPHS: &str = "@#.x >_+Xo:|-";
 pub const TILE_SIZE: Vector = Vector { x: 12.0, y: 12.0 };
 pub const MAP_SIZE: Vector = Vector { x: 57.0, y: 40.0 };
 
-pub fn compute_fov(map: &mut Map, player_pos: &Vector) {
+pub fn compute_fov(map: &mut Map, player_pos: Vector) {
     for dx in -1..2 {
         for dy in -1..2 {
             let future_x: i32 = player_pos.x as i32 + dx as i32;
@@ -163,7 +163,7 @@ pub fn compute_fov(map: &mut Map, player_pos: &Vector) {
                 && future_y != 0
                 && future_y != MAP_SIZE.y as i32
             {
-                let line_to_point = get_line(*player_pos, Vector::new(future_x, future_y));
+                let line_to_point = get_line(player_pos, Vector::new(future_x, future_y));
                 for point in line_to_point.iter() {
                     let tile = &mut map[point.x as usize][point.y as usize];
                     tile.is_in_fov = true;

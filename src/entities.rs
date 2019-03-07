@@ -1,12 +1,12 @@
 use crate::ui::UIData;
-use crate::map::{get_line, Map, Palette, MAP_SIZE, TILE_SIZE};
+use crate::map::{get_line, Map, Palette, TILE_SIZE};
 use quicksilver::{
     geom::{Rectangle, Vector},
     graphics::{Background::Blended, Color, Image},
     lifecycle::Window,
 };
 use std::collections::HashMap;
-use slotmap::{SlotMap, DefaultKey, SecondaryMap};
+use slotmap::{SlotMap, DefaultKey};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Entity {
@@ -85,7 +85,7 @@ pub fn draw_entities(
     entities: &SlotMap<DefaultKey, Entity>,
     tileset: &mut HashMap<char, Image>,
 ) {
-    entities.iter().for_each(|(k, entity)| {
+    entities.iter().for_each(|(_k, entity)| {
         let image = tileset.get(&entity.glyph).unwrap();
         window.draw(
             &Rectangle::new(
@@ -104,9 +104,9 @@ pub fn draw_entities(
     });
 }
 
-pub fn compute_fov(entities: &mut SlotMap<DefaultKey, Entity>, player_pos: &Vector) {
-    entities.iter_mut().for_each(|(k, entity)| {
-        entity.is_in_fov = is_in_range(entity.pos, *player_pos);
+pub fn compute_fov(entities: &mut SlotMap<DefaultKey, Entity>, player_pos: Vector) {
+    entities.iter_mut().for_each(|(_k, entity)| {
+        entity.is_in_fov = is_in_range(entity.pos, player_pos);
     });
 }
 
@@ -114,10 +114,10 @@ fn is_in_range(from: Vector, to: Vector) -> bool {
     get_line(from, to).len() <= 2
 }
 
-pub fn pickup(entities: &mut SlotMap<DefaultKey, Entity>, player_pos: &Vector, ui_data: &mut UIData) {
+pub fn pickup(entities: &mut SlotMap<DefaultKey, Entity>, player_pos: Vector, ui_data: &mut UIData) {
     let mut to_pickup = 0;
     entities.retain(|_k, entity| {
-        if entity.pos == *player_pos && entity.pickable {
+        if entity.pos == player_pos && entity.pickable {
             to_pickup += 1;
             false
         } else {
@@ -125,5 +125,5 @@ pub fn pickup(entities: &mut SlotMap<DefaultKey, Entity>, player_pos: &Vector, u
         }
     });
 
-    ui_data.pebbles = to_pickup;
+    ui_data.pebbles += to_pickup;
 }

@@ -84,7 +84,7 @@ impl State for Game {
             direction = Vector::new(0, 1);
         }
 
-        let player_pos = self.entities.get(self.player_key).unwrap().pos.clone();
+        let player_pos = self.entities.get(self.player_key).unwrap().pos;
 
         let future_x = player_pos.x as i32 + direction.x as i32;
         let future_y = player_pos.y as i32 + direction.y as i32;
@@ -102,9 +102,9 @@ impl State for Game {
             self.map = map;
         }
 
-        entities::pickup(&mut self.entities, &player_pos, &mut self.ui_data);
-        entities::compute_fov(&mut self.entities, &player_pos);
-        map::compute_fov(&mut self.map, &player_pos);
+        entities::pickup(&mut self.entities, player_pos, &mut self.ui_data);
+        entities::compute_fov(&mut self.entities, player_pos);
+        map::compute_fov(&mut self.map, player_pos);
         Ok(())
     }
 
@@ -121,7 +121,7 @@ impl State for Game {
         tileset.execute(|tileset| {
             map::draw_map(window, map, tileset);
             entities::draw_entities(window, entities, tileset);
-            ui::draw_ui(window, ui_data, tileset);
+            ui::draw_ui(window, ui_data, tileset, );
             Ok(())
         })?;
         Ok(())

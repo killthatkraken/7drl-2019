@@ -4,7 +4,7 @@ use quicksilver::{
     lifecycle::{Asset, Window},
 };
 
-use crate::map::Palette;
+use crate::map::{Palette, TILE_SIZE};
 use std::collections::HashMap;
 
 pub struct UIData {
@@ -45,20 +45,37 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
     }
 
     //Text
+    let pebbles = data.pebbles;
     data.text
         .execute(|ui_text| {
-            let mut y_offset = 1;
             for (text_type, text) in ui_text {
-                window.draw(
-                    &text.area().translate(Vector::new(762.0, 20 * y_offset)),
-                    Img(&text),
-                );
                 match text_type.as_str() {
-                    "pebbles" => {}
+                    "pebbles" => {
+                        window.draw(
+                            &text.area().translate(Vector::new(
+                                TILE_SIZE.x as f32,
+                                MAP_B_BORDER + TILE_SIZE.y * 2.0,
+                            )),
+                            Img(&text),
+                        );
+
+                        let pebble_ui = &tileset.get(&'o').unwrap();
+                        for n in 1..=pebbles {
+                            window.draw(
+                                &Rectangle::new(
+                                    Vector::new(
+                                        text.area().size.x + (12 * n) as f32,
+                                        MAP_B_BORDER + TILE_SIZE.y * 2.0,
+                                    ),
+                                    pebble_ui.area().size(),
+                                ),
+                                Blended(&pebble_ui, Palette::WHITE),
+                            );
+                        }
+                    }
                     "turn" => {}
                     _ => {}
                 }
-                y_offset += 1;
             }
 
             Ok(())
