@@ -11,6 +11,7 @@ pub struct UIData {
     pub turn: u32,
     pub pebbles: u32,
     text: Asset<HashMap<String, Image>>,
+    message_log: Vec<Image>,
 }
 
 impl UIData {
@@ -19,6 +20,7 @@ impl UIData {
             turn: 0,
             pebbles: 0,
             text,
+            message_log: Vec::new()
         }
     }
 }
@@ -46,6 +48,8 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
 
     //Text
     let pebbles = data.pebbles;
+    let message_log = &data.message_log[..6];
+    let mut y_offset = 2.0;
     data.text
         .execute(|ui_text| {
             for (text_type, text) in ui_text {
@@ -54,7 +58,7 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
                         window.draw(
                             &text.area().translate(Vector::new(
                                 TILE_SIZE.x as f32,
-                                MAP_B_BORDER + TILE_SIZE.y * 2.0,
+                                MAP_B_BORDER + TILE_SIZE.y * y_offset,
                             )),
                             Img(&text),
                         );
@@ -72,10 +76,31 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
                                 Blended(&pebble_ui, Palette::WHITE),
                             );
                         }
+                    },
+                    "message_log" => {
+                        let y_log_offset = 1.0;
+                        window.draw(
+                            &text.area().translate(Vector::new(
+                                TILE_SIZE.x as f32,
+                                MAP_B_BORDER + TILE_SIZE.y * y_offset,
+                            )),
+                            Img(&text),
+                        );
+
+                        message_log.iter().rev().for_each(|message| {
+
+                            window.draw(
+                                &message.area().translate(Vector::new(
+                                    TILE_SIZE.x as f32,
+                                    MAP_B_BORDER + TILE_SIZE.y * y_offset + (8.0 * y_log_offset),
+                                )),
+                                Img(&message),
+                            );
+                        });
                     }
-                    "turn" => {}
                     _ => {}
                 }
+                y_offset += 2.0;
             }
 
             Ok(())

@@ -53,8 +53,14 @@ impl State for Game {
         let ui_text = Asset::new(Font::load(square_font).and_then(move |text| {
             let mut texts = HashMap::new();
             let style = FontStyle::new(12.0, Palette::WHITE);
+            let log_style = FontStyle::new(9.0, Palette::WHITE);
+
             texts.insert(String::from("pebbles"), text.render("Pebbles: ", &style)?);
             texts.insert(String::from("turn"), text.render("Turn: ", &style)?);
+            texts.insert(String::from("message_log"), text.render("Messages", &style)?);
+            texts.insert(String::from("dark"), text.render("It's dark around you...", &log_style)?);
+            texts.insert(String::from("pickup"), text.render("You pickup a pebble", &log_style)?);
+
             Ok(texts)
         }));
 
