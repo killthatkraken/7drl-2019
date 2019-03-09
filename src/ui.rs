@@ -10,25 +10,48 @@ use std::collections::HashMap;
 pub struct UIData {
     pub turn: u32,
     pub pebbles: u32,
-    text: Asset<HashMap<String, Image>>,
-    message_log: Vec<Image>,
+    text: Asset<HashMap<&'static str, Image>>,
 }
 
 impl UIData {
-    pub fn new_game(text: Asset<HashMap<String, Image>>) -> UIData {
+    pub fn new(text: Asset<HashMap<&'static str, Image>>) -> UIData {
         UIData {
             turn: 0,
             pebbles: 0,
             text,
-            message_log: Vec::new()
         }
     }
 }
 
-const MAP_R_BORDER: f32 = 696.0;
-const MAP_B_BORDER: f32 = 480.0;
+pub struct MessageLog {
+    pub log: Vec<&'static str>,
+    show: usize,
+}
 
-pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<char, Image>) {
+impl MessageLog {
+    pub fn new() -> MessageLog {
+        MessageLog {
+            log: vec!["dark"],
+            show: 15,
+        }
+    }
+    pub fn push(&mut self, message: &'static str) {
+        self.log.push(message);
+        if self.log.len() > self.show {
+            self.log.remove(0);
+        }
+    }
+}
+
+const MAP_R_BORDER: i32 = 696;
+const MAP_B_BORDER: i32 = 480;
+
+pub fn draw_ui(
+    window: &mut Window,
+    data: &mut UIData,
+    message_log: &mut MessageLog,
+    tileset: &mut HashMap<char, Image>,
+) {
     //Borders
     let v_border = tileset.get(&'|').unwrap();
     for y in 0..=760 {
@@ -48,17 +71,16 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
 
     //Text
     let pebbles = data.pebbles;
-    let message_log = &data.message_log[..6];
     let mut y_offset = 2.0;
     data.text
         .execute(|ui_text| {
-            for (text_type, text) in ui_text {
-                match text_type.as_str() {
+            for (text_type, text) in ui_text.iter() {
+                match *text_type {
                     "pebbles" => {
                         window.draw(
                             &text.area().translate(Vector::new(
                                 TILE_SIZE.x as f32,
-                                MAP_B_BORDER + TILE_SIZE.y * y_offset,
+                                MAP_B_BORDER as f32 + TILE_SIZE.y * y_offset,
                             )),
                             Img(&text),
                         );
@@ -69,39 +91,46 @@ pub fn draw_ui(window: &mut Window, data: &mut UIData, tileset: &mut HashMap<cha
                                 &Rectangle::new(
                                     Vector::new(
                                         text.area().size.x + (12 * n) as f32,
-                                        MAP_B_BORDER + TILE_SIZE.y * 2.0,
+                                        MAP_B_BORDER as f32 + TILE_SIZE.y * y_offset,
                                     ),
                                     pebble_ui.area().size(),
                                 ),
                                 Blended(&pebble_ui, Palette::WHITE),
                             );
                         }
-                    },
+                        y_offset += 2.0;
+                    }
                     "message_log" => {
-                        let y_log_offset = 1.0;
                         window.draw(
                             &text.area().translate(Vector::new(
                                 TILE_SIZE.x as f32,
-                                MAP_B_BORDER + TILE_SIZE.y * y_offset,
+                                MAP_B_BORDER as f32 + TILE_SIZE.y * y_offset,
                             )),
                             Img(&text),
                         );
-
-                        message_log.iter().rev().for_each(|message| {
-
-                            window.draw(
-                                &message.area().translate(Vector::new(
-                                    TILE_SIZE.x as f32,
-                                    MAP_B_BORDER + TILE_SIZE.y * y_offset + (8.0 * y_log_offset),
-                                )),
-                                Img(&message),
-                            );
-                        });
+                        y_offset += 2.0;
                     }
                     _ => {}
                 }
-                y_offset += 2.0;
             }
+
+            let mut log_offset = y_offset + 2.0;
+            message_log
+                .log
+                .iter()
+                .enumerate()
+                .rev()
+                .for_each(|(_i, message)| {
+                    let text = ui_text.get(message).unwrap();
+                    window.draw(
+                        &text.area().translate(Vector::new(
+                            TILE_SIZE.x as f32,
+                            MAP_B_BORDER as f32 + 10.0 * log_offset,
+                        )),
+                        Img(&text),
+                    );
+                    log_offset += 1.0;
+                });
 
             Ok(())
         })

@@ -222,7 +222,7 @@ pub fn generate() -> (Map, Vector) {
         for x in 0..map.len() {
             for y in 0..map[x].len() {
                 let this_tile = &map[x][y];
-                let this_pos = Vector::new(x as f32, y as f32);
+                let this_pos = Vector::new(x as i32, y as i32);
 
                 if x == 0 || x == map.len() - 1 || y == 0 || y == map[x].len() - 1 {
                     to_floor.push(this_pos);
@@ -331,4 +331,11 @@ pub fn get_line(a: Vector, b: Vector) -> Vec<Vector> {
         }
     }
     points
+}
+
+pub fn is_in_bounds(pos: Vector) -> bool {
+    return pos.x != 0.0
+        && pos.x != MAP_SIZE.x
+        && pos.y != 0.0
+        && pos.y != MAP_SIZE.y;
 }
